@@ -1,5 +1,6 @@
 import { redirect, useLoaderData, type LoaderFunctionArgs } from 'react-router'
 import { FaGoogle } from "react-icons/fa";
+import { GiExitDoor } from 'react-icons/gi'
 
 import { createClient } from '~/lib/supabase/server'
 import { Button } from '~/components/ui/button'
@@ -9,7 +10,7 @@ type CalendarAuthSuccessResponse = {
 	token: string
 }
 
-async function GetCalendarAuthToken(userId: string): Promise<CalendarAuthSuccessResponse>{
+export async function GetCalendarAuthToken(userId: string): Promise<CalendarAuthSuccessResponse>{
 	const url = 'https://us-west-2.recall.ai/api/v1/calendar/authenticate/';
 	const options = {
 		method: 'POST',
@@ -83,7 +84,8 @@ export default function ProtectedPage() {
 		const calAuthToken = await GetCalendarAuthToken(data.user.id)
 		const state: OAuthState = {
 			recall_calendar_auth_token: calAuthToken.token,
-			google_oauth_redirect_url: 'https://us-west-2.recall.ai/api/v1/calendar/google_oauth_callback/'
+			google_oauth_redirect_url: 'https://us-west-2.recall.ai/api/v1/calendar/google_oauth_callback/',
+			success_url: `${window.location.origin}/gcal/success`
 		}
 		const url = CreateOAuthUrl(state)
 		setGoogleUrl(url)
@@ -108,13 +110,18 @@ export default function ProtectedPage() {
 	)
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen gap-2">
-      <p>
+    <div className="flex flex-col items-center justify-center h-screen gap-2 p-5">
+      <p className="text-xl">
         User: <span className="text-primary font-semibold">{data.user.email}</span>
       </p>
+			<div className="flex-1" />
 			<a href={googleUrl}>
 				<Button> <FaGoogle/> Link Google Calendar </Button>
 			</a>
+			<div className="flex-1" />
+      <a href="/logout">
+        <Button> <GiExitDoor/> Logout</Button>
+      </a>
     </div>
   )
 }
