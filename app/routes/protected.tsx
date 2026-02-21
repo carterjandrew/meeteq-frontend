@@ -1,5 +1,5 @@
 import { NavLink, redirect, useLoaderData, type LoaderFunctionArgs } from 'react-router'
-import { FaGoogle, FaLink } from "react-icons/fa";
+import { FaGoogle, FaLink, FaMicrosoft } from "react-icons/fa";
 import { GiExitDoor } from 'react-icons/gi'
 
 import { createClient } from '~/lib/supabase/server'
@@ -116,11 +116,13 @@ export default function ProtectedPage() {
       </p>
 			<div className="flex-1" />
 			<p> Link your calendar:</p>
+			<p> For now, any virtual meeting you have linked in your primary calendar will be joined by the bot </p>
 			<a href={googleUrl}>
 				<Button> <FaGoogle/> Link Google Calendar </Button>
 			</a>
+			<Button disabled> <FaMicrosoft/> Outlook Coming Later </Button>
 			<div className="flex-1" />
-				<p> Already signed up? </p>
+				<p> Already linked a calendar? </p>
 				<NavLink to='/gcal/success'>
 					<Button>
 						<FaLink /> Check your upcoming meetings here
