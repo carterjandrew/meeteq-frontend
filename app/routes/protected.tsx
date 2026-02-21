@@ -1,5 +1,5 @@
-import { redirect, useLoaderData, type LoaderFunctionArgs } from 'react-router'
-import { FaGoogle } from "react-icons/fa";
+import { NavLink, redirect, useLoaderData, type LoaderFunctionArgs } from 'react-router'
+import { FaGoogle, FaLink } from "react-icons/fa";
 import { GiExitDoor } from 'react-icons/gi'
 
 import { createClient } from '~/lib/supabase/server'
@@ -115,9 +115,17 @@ export default function ProtectedPage() {
         User: <span className="text-primary font-semibold">{data.user.email}</span>
       </p>
 			<div className="flex-1" />
+			<p> Link your calendar:</p>
 			<a href={googleUrl}>
 				<Button> <FaGoogle/> Link Google Calendar </Button>
 			</a>
+			<div className="flex-1" />
+				<p> Already signed up? </p>
+				<NavLink to='/gcal/success'>
+					<Button>
+						<FaLink /> Check your upcoming meetings here
+					</Button>
+				</NavLink>
 			<div className="flex-1" />
       <a href="/logout">
         <Button> <GiExitDoor/> Logout</Button>
