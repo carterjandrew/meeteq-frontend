@@ -1,7 +1,7 @@
 import { jsx, jsxs } from "react/jsx-runtime";
 import { PassThrough } from "node:stream";
 import { createReadableStreamFromReadable } from "@react-router/node";
-import { ServerRouter, UNSAFE_withComponentProps, Outlet, UNSAFE_withErrorBoundaryProps, isRouteErrorResponse, Meta, Links, ScrollRestoration, Scripts, useFetcher, useSearchParams, Link, data, redirect, useLoaderData } from "react-router";
+import { ServerRouter, UNSAFE_withComponentProps, Outlet, UNSAFE_withErrorBoundaryProps, isRouteErrorResponse, Meta, Links, ScrollRestoration, Scripts, useFetcher, useSearchParams, Link, data, redirect, useLoaderData, NavLink } from "react-router";
 import { isbot } from "isbot";
 import { renderToPipeableStream } from "react-dom/server";
 import { createServerClient, serializeCookieHeader, parseCookieHeader } from "@supabase/ssr";
@@ -10,7 +10,7 @@ import { cva } from "class-variance-authority";
 import { Slot, Label as Label$1 } from "radix-ui";
 import { clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { FaGoogle } from "react-icons/fa";
+import { FaGoogle, FaMicrosoft, FaUpload, FaLink } from "react-icons/fa";
 import { GiExitDoor } from "react-icons/gi";
 const streamTimeout = 5e3;
 function handleRequest(request, responseStatusCode, responseHeaders, routerContext, loadContext) {
@@ -476,7 +476,7 @@ const route2 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProper
   action: action$2,
   default: updatePassword
 }, Symbol.toStringTag, { value: "Module" }));
-async function loader$4({
+async function loader$5({
   request
 }) {
   const requestUrl = new URL(request.url);
@@ -507,7 +507,7 @@ async function loader$4({
 }
 const route3 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
-  loader: loader$4
+  loader: loader$5
 }, Symbol.toStringTag, { value: "Module" }));
 async function GetCalendarAuthToken(userId) {
   const url = "https://us-west-2.recall.ai/api/v1/calendar/authenticate/";
@@ -516,7 +516,7 @@ async function GetCalendarAuthToken(userId) {
     headers: {
       accept: "application/json",
       "content-type": "application/json",
-      Authorization: `Token ${"ad31860ce0289f714ef10e10bf2bebb496ab9f5f"}`
+      Authorization: `Token ${"1d8c922ba40c3b78b2df795f3a00fa766d5b664c"}`
     },
     body: JSON.stringify({
       user_id: userId
@@ -528,6 +528,28 @@ async function GetCalendarAuthToken(userId) {
   }
   const token = await response.json();
   return token;
+}
+const CalendarRecordingPreferenceKeys = ["record_non_host", "record_recurring", "record_external", "record_internal", "record_confirmed", "record_only_host"];
+async function PutRecordingPreferences(userId, authToken, preferences) {
+  const calAuthToken = await GetCalendarAuthToken(userId);
+  const url = "https://us-west-2.recall.ai/api/v1/calendar/user/";
+  const options = {
+    method: "PUT",
+    headers: {
+      accept: "application/json",
+      "content-type": "application/json",
+      "x-recallcalendarauthtoken": calAuthToken.token
+    },
+    body: JSON.stringify({
+      external_id: userId,
+      preferences
+    })
+  };
+  const response = await fetch(url, options);
+  if (!response.ok) {
+    throw new Error(response.statusText);
+  }
+  return preferences;
 }
 function CreateOAuthUrl(state, clientId = "465891640758-8c23jlclq1bjbcqchv10ie6k0il8uh0c.apps.googleusercontent.com", baseUrl = "https://accounts.google.com/o/oauth2/v2/auth?", scope = ["https://www.googleapis.com/auth/calendar.events.readonly", "https://www.googleapis.com/auth/userinfo.email"], accessType = "offline", prompt = "consent", includeGrantedScopes = "true", responseType = "code", redirectUri = "https://us-west-2.recall.ai/api/v1/calendar/google_oauth_callback/") {
   const scopes = scope.join(" ");
@@ -544,7 +566,7 @@ function CreateOAuthUrl(state, clientId = "465891640758-8c23jlclq1bjbcqchv10ie6k
 			&client_id=${clientId}
 		`;
 }
-const loader$3 = async ({
+const loader$4 = async ({
   request
 }) => {
   const {
@@ -562,6 +584,15 @@ const loader$3 = async ({
 const _protected = UNSAFE_withComponentProps(function ProtectedPage() {
   let data2 = useLoaderData();
   const [googleUrl, setGoogleUrl] = useState();
+  const [recButtonText, setRecButtonText] = useState("Update Bot Join Preferences");
+  const [calendarRecordingPreferences, setCanlendarRecordingPreferences] = useState({
+    record_non_host: false,
+    record_recurring: false,
+    record_external: false,
+    record_internal: true,
+    record_confirmed: false,
+    record_only_host: false
+  });
   async function ConstructGoogleUrl() {
     const calAuthToken = await GetCalendarAuthToken(data2.user.id);
     const state = {
@@ -601,10 +632,52 @@ const _protected = UNSAFE_withComponentProps(function ProtectedPage() {
       })]
     }), /* @__PURE__ */ jsx("div", {
       className: "flex-1"
+    }), /* @__PURE__ */ jsx("p", {
+      children: " Link your calendar:"
+    }), /* @__PURE__ */ jsx("p", {
+      children: " For now, any virtual meeting you have linked in your primary calendar will be joined by the bot "
     }), /* @__PURE__ */ jsx("a", {
       href: googleUrl,
       children: /* @__PURE__ */ jsxs(Button, {
         children: [" ", /* @__PURE__ */ jsx(FaGoogle, {}), " Link Google Calendar "]
+      })
+    }), /* @__PURE__ */ jsxs(Button, {
+      disabled: true,
+      children: [" ", /* @__PURE__ */ jsx(FaMicrosoft, {}), " Outlook Coming Later "]
+    }), /* @__PURE__ */ jsx("div", {
+      className: "flex-1"
+    }), /* @__PURE__ */ jsx("p", {
+      children: " Update when your bot joins meetings: "
+    }), /* @__PURE__ */ jsx("div", {
+      className: "flex flex-wrap border",
+      children: CalendarRecordingPreferenceKeys.map((preference) => /* @__PURE__ */ jsxs("div", {
+        className: "flex flex-row items-center gap-2 p-5",
+        children: [/* @__PURE__ */ jsx("p", {
+          children: preference
+        }), /* @__PURE__ */ jsx("input", {
+          type: "checkbox",
+          checked: calendarRecordingPreferences[preference],
+          onChange: (e) => {
+            setCanlendarRecordingPreferences((crp) => ({
+              ...crp,
+              [preference]: e.target.checked
+            }));
+          }
+        })]
+      }))
+    }), /* @__PURE__ */ jsxs(Button, {
+      onClick: (e) => {
+        PutRecordingPreferences(data2.user.id).then((_) => setRecButtonText("Updated successfully")).catch((e2) => setRecButtonText(e2));
+      },
+      children: [/* @__PURE__ */ jsx(FaUpload, {}), recButtonText]
+    }), /* @__PURE__ */ jsx("div", {
+      className: "flex-1"
+    }), /* @__PURE__ */ jsx("p", {
+      children: " Already linked a calendar? "
+    }), /* @__PURE__ */ jsx(NavLink, {
+      to: "/gcal/success",
+      children: /* @__PURE__ */ jsxs(Button, {
+        children: [/* @__PURE__ */ jsx(FaLink, {}), " Check your upcoming meetings here"]
       })
     }), /* @__PURE__ */ jsx("div", {
       className: "flex-1"
@@ -616,13 +689,14 @@ const _protected = UNSAFE_withComponentProps(function ProtectedPage() {
     })]
   });
 });
-const route6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   GetCalendarAuthToken,
+  PutRecordingPreferences,
   default: _protected,
-  loader: loader$3
+  loader: loader$4
 }, Symbol.toStringTag, { value: "Module" }));
-const loader$2 = async ({
+const loader$3 = async ({
   request
 }) => {
   const {
@@ -640,7 +714,7 @@ const loader$2 = async ({
 const gcal_success = UNSAFE_withComponentProps(function SuccessPage() {
   let data2 = useLoaderData();
   let [calendarEvents, setCalendarEvents] = useState();
-  async function ListUpcomingMeetings() {
+  async function ListUpcomingMeetings2() {
     const calAuthToken = await GetCalendarAuthToken(data2.user.id);
     const url = "https://us-west-2.recall.ai/api/v1/calendar/meetings/";
     const options = {
@@ -656,7 +730,7 @@ const gcal_success = UNSAFE_withComponentProps(function SuccessPage() {
     setCalendarEvents(calEvents);
   }
   useEffect(() => {
-    ListUpcomingMeetings();
+    ListUpcomingMeetings2();
   }, []);
   if (calendarEvents === void 0) return /* @__PURE__ */ jsx("div", {
     className: "flex flex-col items-center justify-center h-screen gap-2",
@@ -719,6 +793,90 @@ const gcal_success = UNSAFE_withComponentProps(function SuccessPage() {
 const route4 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: gcal_success,
+  loader: loader$3
+}, Symbol.toStringTag, { value: "Module" }));
+const loader$2 = async ({
+  request
+}) => {
+  const {
+    supabase
+  } = createClient(request);
+  const {
+    data: data2,
+    error
+  } = await supabase.auth.getUser();
+  if (error || !data2?.user) {
+    return redirect("/login");
+  }
+  return data2;
+};
+const gcal_delete = UNSAFE_withComponentProps(function SuccessPage2() {
+  useLoaderData();
+  let [calendarEvents, setCalendarEvents] = useState();
+  useEffect(() => {
+    ListUpcomingMeetings();
+  }, []);
+  if (calendarEvents === void 0) return /* @__PURE__ */ jsx("div", {
+    className: "flex flex-col items-center justify-center h-screen gap-2",
+    children: /* @__PURE__ */ jsx("p", {
+      children: " Loading calendar events "
+    })
+  });
+  if (calendarEvents.length == 0) return /* @__PURE__ */ jsx("div", {
+    className: "flex flex-col items-center justify-center h-screen gap-2",
+    children: /* @__PURE__ */ jsx("p", {
+      children: " No video call meetings found, try and create one and reload this page "
+    })
+  });
+  return /* @__PURE__ */ jsxs("div", {
+    className: "flex flex-col items-center justify-center h-screen gap-2 padding-5",
+    children: [/* @__PURE__ */ jsx("div", {
+      className: "p-5",
+      children: /* @__PURE__ */ jsx("p", {
+        className: "font-bold text-4xl",
+        children: "Your upcoming events:"
+      })
+    }), /* @__PURE__ */ jsx("div", {
+      className: "w-full max-w-sm items-center justify-center",
+      children: calendarEvents.map((calEvent) => /* @__PURE__ */ jsxs(Card, {
+        children: [/* @__PURE__ */ jsxs(CardHeader, {
+          children: [/* @__PURE__ */ jsx(CardTitle, {
+            className: "text-2xl",
+            children: calEvent.title
+          }), /* @__PURE__ */ jsx(CardDescription, {
+            className: "break-all",
+            children: calEvent.description
+          })]
+        }), /* @__PURE__ */ jsxs(CardContent, {
+          children: [/* @__PURE__ */ jsxs("p", {
+            children: [/* @__PURE__ */ jsx("span", {
+              className: "font-bold",
+              children: " Start time: "
+            }), calEvent.start_time]
+          }), /* @__PURE__ */ jsxs("p", {
+            children: [/* @__PURE__ */ jsx("span", {
+              className: "font-bold",
+              children: " End time: "
+            }), calEvent.end_time]
+          }), /* @__PURE__ */ jsxs("p", {
+            children: [/* @__PURE__ */ jsx("span", {
+              className: "font-bold",
+              children: " Platform: "
+            }), calEvent.meeting_platform]
+          }), /* @__PURE__ */ jsxs("p", {
+            children: [/* @__PURE__ */ jsx("span", {
+              className: "font-bold",
+              children: " Will record: "
+            }), calEvent.will_record ? "yes" : "no"]
+          })]
+        })]
+      }))
+    })]
+  });
+});
+const route5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  default: gcal_delete,
   loader: loader$2
 }, Symbol.toStringTag, { value: "Module" }));
 const auth_error = UNSAFE_withComponentProps(function Page2() {
@@ -749,7 +907,7 @@ const auth_error = UNSAFE_withComponentProps(function Page2() {
     })
   });
 });
-const route5 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route6 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: auth_error
 }, Symbol.toStringTag, { value: "Module" }));
@@ -894,7 +1052,7 @@ const signUp = UNSAFE_withComponentProps(function SignUp() {
     })
   });
 });
-const route7 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action: action$1,
   default: signUp
@@ -919,7 +1077,7 @@ const _index = UNSAFE_withComponentProps(function Index() {
     className: "flex min-h-svh w-full items-center justify-center p-6 md:p-10"
   });
 });
-const route8 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: _index,
   loader: loader$1
@@ -945,7 +1103,7 @@ async function loader({
     headers
   });
 }
-const route9 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route10 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   loader
 }, Symbol.toStringTag, { value: "Module" }));
@@ -1051,7 +1209,7 @@ const login = UNSAFE_withComponentProps(function Login() {
     })
   });
 });
-const route10 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   action,
   default: login
@@ -1069,12 +1227,12 @@ const home = UNSAFE_withComponentProps(function Home() {
     children: "Hello"
   });
 });
-const route11 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+const route12 = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null,
   default: home,
   meta
 }, Symbol.toStringTag, { value: "Module" }));
-const serverManifest = { "entry": { "module": "https://carterjandrew.github.io/meeteq-frontend/assets/entry.client-BoqInLzC.js", "imports": ["https://carterjandrew.github.io/meeteq-frontend/assets/chunk-EPOLDU6W-DDi5ovoi.js", "https://carterjandrew.github.io/meeteq-frontend/assets/index-CX0TGd-n.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": true, "module": "https://carterjandrew.github.io/meeteq-frontend/assets/root-jim79vdP.js", "imports": ["https://carterjandrew.github.io/meeteq-frontend/assets/chunk-EPOLDU6W-DDi5ovoi.js", "https://carterjandrew.github.io/meeteq-frontend/assets/index-CX0TGd-n.js"], "css": ["https://carterjandrew.github.io/meeteq-frontend/assets/root-DwgZzP1_.css"], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/forgot-password": { "id": "routes/forgot-password", "parentId": "root", "path": "forgot-password", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "https://carterjandrew.github.io/meeteq-frontend/assets/forgot-password-BW-BGjWI.js", "imports": ["https://carterjandrew.github.io/meeteq-frontend/assets/chunk-EPOLDU6W-DDi5ovoi.js", "https://carterjandrew.github.io/meeteq-frontend/assets/button-DkbTRq6R.js", "https://carterjandrew.github.io/meeteq-frontend/assets/card-D5_2plhK.js", "https://carterjandrew.github.io/meeteq-frontend/assets/label-DCFBg3qu.js", "https://carterjandrew.github.io/meeteq-frontend/assets/utils-BQHNewu7.js", "https://carterjandrew.github.io/meeteq-frontend/assets/index-CX0TGd-n.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/update-password": { "id": "routes/update-password", "parentId": "root", "path": "update-password", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "https://carterjandrew.github.io/meeteq-frontend/assets/update-password-DfgO0qJS.js", "imports": ["https://carterjandrew.github.io/meeteq-frontend/assets/chunk-EPOLDU6W-DDi5ovoi.js", "https://carterjandrew.github.io/meeteq-frontend/assets/button-DkbTRq6R.js", "https://carterjandrew.github.io/meeteq-frontend/assets/card-D5_2plhK.js", "https://carterjandrew.github.io/meeteq-frontend/assets/label-DCFBg3qu.js", "https://carterjandrew.github.io/meeteq-frontend/assets/utils-BQHNewu7.js", "https://carterjandrew.github.io/meeteq-frontend/assets/index-CX0TGd-n.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.confirm": { "id": "routes/auth.confirm", "parentId": "root", "path": "auth/confirm", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "https://carterjandrew.github.io/meeteq-frontend/assets/auth.confirm-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/gcal.success": { "id": "routes/gcal.success", "parentId": "root", "path": "gcal/success", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "https://carterjandrew.github.io/meeteq-frontend/assets/gcal.success-mXQvU3lj.js", "imports": ["https://carterjandrew.github.io/meeteq-frontend/assets/chunk-EPOLDU6W-DDi5ovoi.js", "https://carterjandrew.github.io/meeteq-frontend/assets/protected-Du4KAlwi.js", "https://carterjandrew.github.io/meeteq-frontend/assets/card-D5_2plhK.js", "https://carterjandrew.github.io/meeteq-frontend/assets/button-DkbTRq6R.js", "https://carterjandrew.github.io/meeteq-frontend/assets/utils-BQHNewu7.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.error": { "id": "routes/auth.error", "parentId": "root", "path": "auth/error", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "https://carterjandrew.github.io/meeteq-frontend/assets/auth.error-Da6D4owg.js", "imports": ["https://carterjandrew.github.io/meeteq-frontend/assets/chunk-EPOLDU6W-DDi5ovoi.js", "https://carterjandrew.github.io/meeteq-frontend/assets/card-D5_2plhK.js", "https://carterjandrew.github.io/meeteq-frontend/assets/utils-BQHNewu7.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/protected": { "id": "routes/protected", "parentId": "root", "path": "protected", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "https://carterjandrew.github.io/meeteq-frontend/assets/protected-S3Zgvkcx.js", "imports": ["https://carterjandrew.github.io/meeteq-frontend/assets/protected-Du4KAlwi.js", "https://carterjandrew.github.io/meeteq-frontend/assets/chunk-EPOLDU6W-DDi5ovoi.js", "https://carterjandrew.github.io/meeteq-frontend/assets/button-DkbTRq6R.js", "https://carterjandrew.github.io/meeteq-frontend/assets/utils-BQHNewu7.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/sign-up": { "id": "routes/sign-up", "parentId": "root", "path": "sign-up", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "https://carterjandrew.github.io/meeteq-frontend/assets/sign-up-DNaQhJRX.js", "imports": ["https://carterjandrew.github.io/meeteq-frontend/assets/chunk-EPOLDU6W-DDi5ovoi.js", "https://carterjandrew.github.io/meeteq-frontend/assets/button-DkbTRq6R.js", "https://carterjandrew.github.io/meeteq-frontend/assets/card-D5_2plhK.js", "https://carterjandrew.github.io/meeteq-frontend/assets/label-DCFBg3qu.js", "https://carterjandrew.github.io/meeteq-frontend/assets/utils-BQHNewu7.js", "https://carterjandrew.github.io/meeteq-frontend/assets/index-CX0TGd-n.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index": { "id": "routes/_index", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "https://carterjandrew.github.io/meeteq-frontend/assets/_index-Bzpfb4d-.js", "imports": ["https://carterjandrew.github.io/meeteq-frontend/assets/chunk-EPOLDU6W-DDi5ovoi.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/logout": { "id": "routes/logout", "parentId": "root", "path": "logout", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "https://carterjandrew.github.io/meeteq-frontend/assets/logout-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/login": { "id": "routes/login", "parentId": "root", "path": "login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "https://carterjandrew.github.io/meeteq-frontend/assets/login-PXGZ128n.js", "imports": ["https://carterjandrew.github.io/meeteq-frontend/assets/chunk-EPOLDU6W-DDi5ovoi.js", "https://carterjandrew.github.io/meeteq-frontend/assets/button-DkbTRq6R.js", "https://carterjandrew.github.io/meeteq-frontend/assets/card-D5_2plhK.js", "https://carterjandrew.github.io/meeteq-frontend/assets/label-DCFBg3qu.js", "https://carterjandrew.github.io/meeteq-frontend/assets/utils-BQHNewu7.js", "https://carterjandrew.github.io/meeteq-frontend/assets/index-CX0TGd-n.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/home": { "id": "routes/home", "parentId": "root", "path": "home", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "https://carterjandrew.github.io/meeteq-frontend/assets/home-CqBnm9fY.js", "imports": ["https://carterjandrew.github.io/meeteq-frontend/assets/chunk-EPOLDU6W-DDi5ovoi.js", "https://carterjandrew.github.io/meeteq-frontend/assets/button-DkbTRq6R.js", "https://carterjandrew.github.io/meeteq-frontend/assets/utils-BQHNewu7.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "https://carterjandrew.github.io/meeteq-frontend/assets/manifest-a60cc0f5.js", "version": "a60cc0f5", "sri": void 0 };
+const serverManifest = { "entry": { "module": "/assets/entry.client-BvDcuYbj.js", "imports": ["/assets/chunk-EPOLDU6W-CgcW0AHA.js", "/assets/index-CIcoTGpy.js"], "css": [] }, "routes": { "root": { "id": "root", "parentId": void 0, "path": "", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": true, "module": "/assets/root-DPgnkPlR.js", "imports": ["/assets/chunk-EPOLDU6W-CgcW0AHA.js", "/assets/index-CIcoTGpy.js"], "css": ["/assets/root-itzUmRJF.css"], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/forgot-password": { "id": "routes/forgot-password", "parentId": "root", "path": "forgot-password", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/forgot-password-CNCt3VE_.js", "imports": ["/assets/chunk-EPOLDU6W-CgcW0AHA.js", "/assets/button-CgrZ0ZEY.js", "/assets/card-DDjTzByG.js", "/assets/label-BtghGhbW.js", "/assets/utils-BQHNewu7.js", "/assets/index-CIcoTGpy.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/update-password": { "id": "routes/update-password", "parentId": "root", "path": "update-password", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/update-password-CmMyCouU.js", "imports": ["/assets/chunk-EPOLDU6W-CgcW0AHA.js", "/assets/button-CgrZ0ZEY.js", "/assets/card-DDjTzByG.js", "/assets/label-BtghGhbW.js", "/assets/utils-BQHNewu7.js", "/assets/index-CIcoTGpy.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.confirm": { "id": "routes/auth.confirm", "parentId": "root", "path": "auth/confirm", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/auth.confirm-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/gcal.success": { "id": "routes/gcal.success", "parentId": "root", "path": "gcal/success", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/gcal.success-B_VBRCcD.js", "imports": ["/assets/chunk-EPOLDU6W-CgcW0AHA.js", "/assets/protected-CO1sMb8r.js", "/assets/card-DDjTzByG.js", "/assets/button-CgrZ0ZEY.js", "/assets/utils-BQHNewu7.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/gcal.delete": { "id": "routes/gcal.delete", "parentId": "root", "path": "gcal/delete", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/gcal.delete-CmyEsWm2.js", "imports": ["/assets/chunk-EPOLDU6W-CgcW0AHA.js", "/assets/card-DDjTzByG.js", "/assets/utils-BQHNewu7.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/auth.error": { "id": "routes/auth.error", "parentId": "root", "path": "auth/error", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/auth.error-D1CfW31_.js", "imports": ["/assets/chunk-EPOLDU6W-CgcW0AHA.js", "/assets/card-DDjTzByG.js", "/assets/utils-BQHNewu7.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/protected": { "id": "routes/protected", "parentId": "root", "path": "protected", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/protected-C0Mq2K1o.js", "imports": ["/assets/protected-CO1sMb8r.js", "/assets/chunk-EPOLDU6W-CgcW0AHA.js", "/assets/button-CgrZ0ZEY.js", "/assets/utils-BQHNewu7.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/sign-up": { "id": "routes/sign-up", "parentId": "root", "path": "sign-up", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/sign-up-Df9hAffo.js", "imports": ["/assets/chunk-EPOLDU6W-CgcW0AHA.js", "/assets/button-CgrZ0ZEY.js", "/assets/card-DDjTzByG.js", "/assets/label-BtghGhbW.js", "/assets/utils-BQHNewu7.js", "/assets/index-CIcoTGpy.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/_index": { "id": "routes/_index", "parentId": "root", "path": void 0, "index": true, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/_index-CEmDE_6p.js", "imports": ["/assets/chunk-EPOLDU6W-CgcW0AHA.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/logout": { "id": "routes/logout", "parentId": "root", "path": "logout", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": true, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/logout-l0sNRNKZ.js", "imports": [], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/login": { "id": "routes/login", "parentId": "root", "path": "login", "index": void 0, "caseSensitive": void 0, "hasAction": true, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/login-DlAp1HHq.js", "imports": ["/assets/chunk-EPOLDU6W-CgcW0AHA.js", "/assets/button-CgrZ0ZEY.js", "/assets/card-DDjTzByG.js", "/assets/label-BtghGhbW.js", "/assets/utils-BQHNewu7.js", "/assets/index-CIcoTGpy.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 }, "routes/home": { "id": "routes/home", "parentId": "root", "path": "home", "index": void 0, "caseSensitive": void 0, "hasAction": false, "hasLoader": false, "hasClientAction": false, "hasClientLoader": false, "hasClientMiddleware": false, "hasErrorBoundary": false, "module": "/assets/home-aMNW0Kgh.js", "imports": ["/assets/chunk-EPOLDU6W-CgcW0AHA.js", "/assets/button-CgrZ0ZEY.js", "/assets/utils-BQHNewu7.js"], "css": [], "clientActionModule": void 0, "clientLoaderModule": void 0, "clientMiddlewareModule": void 0, "hydrateFallbackModule": void 0 } }, "url": "/assets/manifest-a4df0ea1.js", "version": "a4df0ea1", "sri": void 0 };
 const assetsBuildDirectory = "build/client";
 const basename = "/";
 const future = { "unstable_optimizeDeps": false, "unstable_subResourceIntegrity": false, "unstable_trailingSlashAwareDataRequests": false, "v8_middleware": false, "v8_splitRouteModules": false, "v8_viteEnvironmentApi": false };
@@ -1082,7 +1240,7 @@ const ssr = true;
 const isSpaMode = false;
 const prerender = [];
 const routeDiscovery = { "mode": "lazy", "manifestPath": "/__manifest" };
-const publicPath = "https://carterjandrew.github.io/meeteq-frontend/";
+const publicPath = "/";
 const entry = { module: entryServer };
 const routes = {
   "root": {
@@ -1125,13 +1283,21 @@ const routes = {
     caseSensitive: void 0,
     module: route4
   },
+  "routes/gcal.delete": {
+    id: "routes/gcal.delete",
+    parentId: "root",
+    path: "gcal/delete",
+    index: void 0,
+    caseSensitive: void 0,
+    module: route5
+  },
   "routes/auth.error": {
     id: "routes/auth.error",
     parentId: "root",
     path: "auth/error",
     index: void 0,
     caseSensitive: void 0,
-    module: route5
+    module: route6
   },
   "routes/protected": {
     id: "routes/protected",
@@ -1139,7 +1305,7 @@ const routes = {
     path: "protected",
     index: void 0,
     caseSensitive: void 0,
-    module: route6
+    module: route7
   },
   "routes/sign-up": {
     id: "routes/sign-up",
@@ -1147,7 +1313,7 @@ const routes = {
     path: "sign-up",
     index: void 0,
     caseSensitive: void 0,
-    module: route7
+    module: route8
   },
   "routes/_index": {
     id: "routes/_index",
@@ -1155,7 +1321,7 @@ const routes = {
     path: void 0,
     index: true,
     caseSensitive: void 0,
-    module: route8
+    module: route9
   },
   "routes/logout": {
     id: "routes/logout",
@@ -1163,7 +1329,7 @@ const routes = {
     path: "logout",
     index: void 0,
     caseSensitive: void 0,
-    module: route9
+    module: route10
   },
   "routes/login": {
     id: "routes/login",
@@ -1171,7 +1337,7 @@ const routes = {
     path: "login",
     index: void 0,
     caseSensitive: void 0,
-    module: route10
+    module: route11
   },
   "routes/home": {
     id: "routes/home",
@@ -1179,7 +1345,7 @@ const routes = {
     path: "home",
     index: void 0,
     caseSensitive: void 0,
-    module: route11
+    module: route12
   }
 };
 const allowedActionOrigins = false;
