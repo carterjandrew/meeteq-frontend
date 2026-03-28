@@ -1,5 +1,5 @@
 import { NavLink, redirect, useLoaderData, type LoaderFunctionArgs } from 'react-router'
-import { FaGoogle, FaLink, FaMicrosoft } from "react-icons/fa";
+import { FaGoogle, FaLink, FaMicrosoft, FaUpload } from "react-icons/fa";
 import { GiExitDoor } from 'react-icons/gi'
 
 import { createClient } from '~/lib/supabase/server'
@@ -27,6 +27,46 @@ export async function GetCalendarAuthToken(userId: string): Promise<CalendarAuth
 	}
 	const token = await response.json() as CalendarAuthSuccessResponse
 	return token
+}
+
+const CalendarRecordingPreferenceKeys = [
+  "record_non_host",
+  "record_recurring",
+  "record_external",
+  "record_internal",
+  "record_confirmed",
+  "record_only_host"
+]
+
+type CalendarRecordingPreferences = {
+  record_non_host: boolean,
+  record_recurring: boolean,
+  record_external: boolean,
+  record_internal: boolean,
+  record_confirmed: boolean,
+  record_only_host: boolean,
+}
+
+export async function PutRecordingPreferences(userId: string, authToken: string, preferences: CalendarRecordingPreferences){
+	const calAuthToken = await GetCalendarAuthToken(userId)
+	const url = 'https://us-west-2.recall.ai/api/v1/calendar/user/';
+	const options = {
+		method: 'PUT',
+		headers: {
+			accept: 'application/json',
+			'content-type': 'application/json',
+			'x-recallcalendarauthtoken': calAuthToken.token
+		},
+		body: JSON.stringify({
+			external_id: userId,
+			preferences: preferences
+		})
+	};
+	const response = await fetch(url, options)
+	if(!response.ok){
+		throw new Error(response.statusText)
+	}
+	return preferences
 }
 
 type OAuthState = {
@@ -79,6 +119,15 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
 export default function ProtectedPage() {
   let data = useLoaderData<typeof loader>()
 	const [googleUrl, setGoogleUrl] = useState<string>()
+	const [recButtonText, setRecButtonText] = useState("Update Bot Join Preferences")
+	const [calendarRecordingPreferences, setCanlendarRecordingPreferences] = useState<CalendarRecordingPreferences>({
+		record_non_host: false,
+		record_recurring: false,
+		record_external: false,
+		record_internal: true,
+		record_confirmed: false,
+		record_only_host: false,
+	})
 
 	async function ConstructGoogleUrl(){
 		const calAuthToken = await GetCalendarAuthToken(data.user.id)
@@ -121,6 +170,37 @@ export default function ProtectedPage() {
 				<Button> <FaGoogle/> Link Google Calendar </Button>
 			</a>
 			<Button disabled> <FaMicrosoft/> Outlook Coming Later </Button>
+			<div className="flex-1" />
+			<p> Update when your bot joins meetings: </p>
+			<div className="flex flex-wrap border">
+				{CalendarRecordingPreferenceKeys.map(preference => (
+					<div className="flex flex-row items-center gap-2 p-5">
+						<p>{preference}</p>
+						<input 
+							type='checkbox'
+							checked={
+								calendarRecordingPreferences[preference]
+							}
+							onChange={e => {
+								setCanlendarRecordingPreferences(crp => (
+									{
+										...crp,
+										[preference]: e.target.checked
+									}
+								))
+							}}
+						/>
+					</div>
+				))}
+			</div>
+			<Button
+				onClick={e => {
+					PutRecordingPreferences(data.user.id, calendarRecordingPreferences).then(_ => setRecButtonText("Updated successfully")).catch(e => setRecButtonText(e))
+				}}
+			>
+				<FaUpload />
+				{recButtonText}
+			</Button>
 			<div className="flex-1" />
 				<p> Already linked a calendar? </p>
 				<NavLink to='/gcal/success'>

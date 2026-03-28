@@ -1,9 +1,6 @@
 import { redirect, useLoaderData, type LoaderFunctionArgs } from 'react-router'
-import { FaGoogle } from "react-icons/fa";
-import { GiExitDoor } from 'react-icons/gi'
 
 import { createClient } from '~/lib/supabase/server'
-import { Button } from '~/components/ui/button'
 import { useEffect, useState } from 'react'
 import { GetCalendarAuthToken } from './protected';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '~/components/ui/card';
